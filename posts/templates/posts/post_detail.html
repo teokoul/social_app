@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block script %}
+<script>
+
+	$(document).ready(function(){
+		loadPostContainer("post-container", {{ object.id }})
+	});
+
+</script>
+{% endblock script %}
+
+
+
+{% block content %}
+	<div class = 'row'>
+		<div class = 'col-sm-3 col-xs-12' style='background-color:yellow; max-height: 50px' >
+			<h1>{{ object.user }}</h1>
+		</div>
+		
+			<div class = 'col-sm-9'>
+				<div id='post-container'>
+				</div>
+			</div>
+
+
+		
+	</div>
+
+
+
+{% endblock content %}
+
+<div class='row'>
+
+	<div class='col-lg-3 col-md-6 col-sm-3 col-xs-2' style='background-color:red;'>
+		{{ object.content }}<br/>
+	</div>
+	<div class='col-lg-3 col-md-6 col-sm-3 col-xs-2' style='background-color:yellow;'>
+		<br/>
+	</div>
+	<div class='col-lg-3 col-md-6 col-sm-3 col-xs-2' style='background-color:blue;'>
+		{{ object.timestamp }}<br/>
+	</div>
+	<div class='col-lg-3 col-md-6 col-sm-3 col-xs-2' style='background-color:green;'>
+		{{ object.timestamp | timesince }}<br/>
+	</div>
+	
+</div>

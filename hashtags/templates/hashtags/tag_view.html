@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block script %}
+<script>
+
+	$(document).ready(function(){
+		loadPostContainer("post-container")
+	});
+
+</script>
+{% endblock script %}
+
+
+{% block content %}
+
+	<!-- IF NOT SEARCH -->
+
+	<div class='row d-flex justify-content-center'>
+
+		<div class='col-sm-12'>
+			{% if request.GET.q %}
+				<p class='lead' style='margin-top: 20px;'>Results for {{ request.GET.q }}</p>
+				<hr/>
+			{% endif %}
+		</div>
+
+		<div class='col-sm-8 col-sm-offset-2'>
+
+			<h1>Posts</h1>
+			<hr/>
+
+			 <div id="post-container" data-url='/api/tags/{{ obj.tag }}'>
+
+			</div>
+			<a href='#' id='loadmore'>Load More Posts</a>
+			
+		</div>
+
+
+	</div>
+	
+
+{% endblock content %}

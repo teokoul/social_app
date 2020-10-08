@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load recommended %}
+
+{% block script %}
+<script>
+
+	$(document).ready(function(){
+		loadPostContainer("post-container")
+	});
+
+</script>
+{% endblock script %}
+
+
+{% block content %}
+
+	<!-- IF NOT SEARCH -->
+
+	<div class='row d-flex justify-content-center'>
+
+		<div class = 'col-sm-3 col-xs-12 ' style='background-color:red; max-height: 50px;'>
+			<h1>{{ request.user }}</h1>
+			<hr/>
+			<br/>
+			<p class='lead'>Recommended Users</p>
+			{% recommended request.user %}
+		</div>
+		<div class='col-sm-9'>
+
+			{% if not request.GET.q %}
+				<div class='row'>
+
+					{% include "posts/form.html" with form=create_form action_url=create_url btn_title='Post' form_class='post-form' %}
+					
+				</div>
+			{% endif %}
+
+			<br>
+
+			 <div id="post-container" data-url='/api/posts/'>
+
+			</div>
+			<a href='#' id='loadmore'>Load More Posts</a>
+			
+		</div>
+	</div>
+</div>
+
+{% endblock content %}

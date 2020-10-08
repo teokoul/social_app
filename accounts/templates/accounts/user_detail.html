@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% load recommended %}
+
+{% block script %}
+<script>
+
+	$(document).ready(function(){
+		loadPostContainer("post-container")
+	});
+
+</script>
+{% endblock script %}
+
+{% block content %}
+	<div class = 'row'>
+		<div class = 'col-sm-3 col-xs-12' >
+			<h2>{{ object.username }}</h2>
+			<hr>
+			<p>Followers {{ object.followed_by.count }}</p>
+			<p>
+				<a class="btn btn-link" href='{{ object.profile.get_follow_url }}'>
+					{% if following %}Unfollow{% else %}Follow{% endif %}
+				</a>
+			</p>
+			<hr>
+				<h2>Following <small>{{ object.profile.get_following.count }}</small></h2>
+				{% for user in object.profile.get_following %}
+				<a href='/{{ user.username }}' > {{ user.username }}</a> <br/>
+				{% empty %}
+				<h4>Not following any users</h4>
+
+				{% endfor %}
+
+				<hr>
+
+				<h2>Followed By</h2>
+				{% for profile in object.followed_by.all %}
+				<a href='/{{ profile.user.username }}' > {{ profile.user.username }}</a> <br/>
+				{% empty %}
+				<h4>Not followed by any users</h4>
+
+				{% endfor %}
+
+				<hr>
+
+				<h4>Recommended to Follow</h4>
+				{% recommended request.user %}
+				
+		</div>
+		
+			<div class = 'col-sm-9'>
+				<h1>Posts</h1>
+				<div id="post-container" data-url='/api/{{ object.username }}/posts/'>
+
+				</div>
+				<a href='#' id='loadmore'>Load More Posts</a>
+
+
+
+				
+
+			</div>
+
+
+		
+	</div>
+
+
+
+{% endblock content %}

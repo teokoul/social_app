@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block script %}
+<script>
+
+  $(document).ready(function(){
+    loadPostContainer("post-container")
+  });
+
+</script>
+{% endblock script %}
+
+
+{% block content %}
+
+  <!-- IF NOT SEARCH -->
+
+  <div class='row d-flex justify-content-center'>
+
+    <div class='col-sm-12'>
+      {% if request.GET.q %}
+        <p class='lead' style='margin-top: 20px;'>Results for {{ request.GET.q }}</p>
+        <hr/>
+      {% endif %}
+    </div>
+
+    <div class='col-sm-9'>
+
+      <h1>Posts</h1>
+      <hr/>
+      {% if not request.GET.q %}
+        <div class='row'>
+
+          {% include "posts/form.html" with form=create_form action_url=create_url btn_title='Post' form_class='post-form' %}
+          
+        </div>
+      {% endif %}
+
+      <br>
+
+       <div id="post-container" data-url='/api/search/'>
+
+      </div>
+      <a href='#' id='loadmore'>Load More Posts</a>
+      
+    </div>
+
+    <div class = 'col-sm-3'>
+      <h1>Users</h1>
+      <hr/>
+      {% for user in users %}
+        <a href='/{{ user.username}}/'>{{ user.username}}</a><br/>
+
+      {% empty %}
+      <p>No users found.</p>
+      {% endfor %}
+    </div>
+
+  </div>
+  
+
+{% endblock content %}

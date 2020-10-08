@@ -1,0 +1,434 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <!-- <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">-->
+    <!--<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">-->
+
+    <title>{% block title %}Social Network{% endblock title %}</title>
+    <style>
+
+      .red-color {
+        color: red;
+      }
+
+      .grey-color {
+        color: #ccc;
+      }
+
+      .media-focus {
+        background-color: rgba(255, 255, 0, 0.22);
+      }
+
+    </style>
+
+  </head>
+  <body>
+      {% include "navbar.html" %}
+      {% include "reply-model.html" %}
+    <div class = 'container'>
+ 
+      {% block content %}
+
+      {% endblock content %}
+
+    </div>
+
+    
+
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <!--<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script> -->
+    
+
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+
+    <script>
+
+  function loadPostContainer(postContainerID, fetchOneId){
+
+        function getParameterByName(name, url) {
+        if (!url) url = window.location.href;
+
+        name = name.replace(/[\[\]]/g, '\\$&');
+        var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+            results = regex.exec(url);
+        if (!results) return null;
+        if (!results[2]) return '';
+
+        return decodeURIComponent(results[2].replace(/\+/g, ' '));
+        }
+
+        var query = getParameterByName('q')
+        var postList= [];
+        var nextTweetUrl;
+        
+        var postContainer;
+        if (postContainerID) {
+          postContainer = $("#" + postContainerID)
+        } else {
+          postContainer = $("#post-container")
+        }
+        var initialURL = postContainer.attr("data-url") || ("/api/posts/");
+        //console.log(initialURL)
+
+        $(document.body).on("click", ".post-like", function(e){
+          e.preventDefault()
+          var this_ = $(this)
+          var postId = this_.attr("data-id")
+          var likedUrl = '/api/posts/' + postId + "/like/"
+          // this_.text("Liked")
+          $.ajax({
+            method:"GET",
+            url: likedUrl,
+            success: function(data){
+              if (data.liked) {
+                this_.text("Liked")
+              } else {
+                this_.text("Unlike")
+              }
+            },
+            error: function(data){
+              console.log("error")
+              console.log(data)
+            }
+          })
+
+
+
+        })
+
+        $(document.body).on("click", ".post-reply", function(e){
+
+          e.preventDefault()
+          var this_ = $(this)
+          var parentId = this_.attr("data-id")
+          var username = this_.attr("data-user") 
+          var content = this_.parent().parent().find(".content").text()
+          $("#replyModal").modal({})
+          $("#replyModal textarea").after("<input type='hidden' value='" + parentId + "' name='parent_id' />")
+          $("#replyModal textarea").after("<input type='hidden' value='" + true + "' name='reply' />")
+          $("#replyModal textarea").val("@" + username + " ")
+          $("#replyModal #replyModalLabel").text("Reply to" + content)
+          $("#replyModal").on("shown.bs.modal", function(){
+            $('textarea').focus()
+          })
+
+        })
+
+
+
+        $(document.body).on("click", ".repostBtn", function(e){
+
+          e.preventDefault()
+          console.log("Clicked")
+          var url = "/api" + $(this).attr("href")
+          $.ajax({
+            method: "GET",
+            url : url,
+            success: function(data) {
+              console.log(data)
+              // if username is in the API path... let's ignore this
+              if (initialURL == "/api/posts/") {
+                attachPost(data, true, true)
+                updateHashLinks();
+              }
+              
+            },
+            error: function(data){
+              console.log("error")
+              console.log(data)
+            }
+          })
+        })
+
+        function updateHashLinks(){
+          $(".content").each(function(data){
+            var hashtagRegex = /(^|\s)#([\w\d-]+)/g
+            var usernameRegex = /(^|\s)@([\w\d-]+)/g
+            var currentHtml = $(this).html()
+            var newText;
+            newText = currentHtml.replace(hashtagRegex,"$1<a href='/tags/$2/'>#$2</a>")
+            newText = newText.replace(usernameRegex,"$1@<a href='/$2/'>$2</a>")
+            $(this).html(newText)
+          })
+        }
+
+        function formatPost(postValue) {
+
+          var preContent;
+          var container;
+          var postContent;
+          var isReply = postValue.reply;
+          var replyId = postValue.id 
+          if (postValue.parent) {
+            replyId = postValue.parent.id
+          }
+
+          var openingContainerDiv = "<div class=\"media\">"
+          if (postValue.id == fetchOneId){
+            openingContainerDiv = "<div class=\"media media-focus\">"
+            setTimeout(function(){
+              $('.media-focus').css("background-color", "#fff")
+            }, 2000)
+          }
+
+          if (postValue.parent && !isReply) {
+            //there is a repost
+            postValue = postValue.parent
+            preContent = "<span class='grey-color' >Repost via "+ postValue.user.username + " on " + postValue.date_display + "</span><br/>"
+          } else if(postValue.parent && isReply) {
+            preContent = "<span class='grey-color' >Reply to @"+ postValue.user.username + "</span><br/>"
+          }
+
+          var verb = 'Like'
+          if (postValue.did_like){
+            verb = 'Unlike'
+          }
+
+          postContent = "<span class='content'>" + postValue.content + "</span><br/> via <a href= '" + postValue.user.url + "'>" + postValue.user.username + "</a> | " + postValue.date_display + " | " + "<a href='/posts/" + postValue.id + "'>View</a> | " + "<a class='repostBtn' href='/posts/" + postValue.id + "/repost/'>Repost</a>" + " | <a href='#' class='post-like' data-id='" + postValue.id + "''>" + verb + " (" + postValue.likes + ")</a>" + " | <a href='#' class='post-reply' data-user='" + postValue.user.username + "' data-id='" + replyId + "'>Reply</a>"
+
+
+          if (preContent) {
+            container = openingContainerDiv + "<div class=\"media-body\">"+ preContent + postContent + "</div></div><hr/>"
+          } else {
+            container = openingContainerDiv + "<div class=\"media-body\">" + postContent + "</div></div><hr/>"
+          }
+          
+
+          return container
+        }
+
+        function attachPost(postValue, prepend, repost) {
+          var dateDisplay = postValue.date_display;
+          var postContent = postValue.content;
+          var postUser = postValue.user;
+          var postFormattedHtml;
+          var verb = 'Like'
+          if (postValue.did_like){
+            verb = 'Unlike'
+          }
+
+          postFormattedHtml= formatPost(postValue)
+
+          if (prepend==true) {
+            postContainer.prepend(postFormattedHtml)
+          } else {
+            postContainer.append(postFormattedHtml)
+          }
+          
+        }
+
+        function pasrePosts() {
+          if (postList == 0) {
+            postContainer.text("No posts currently found.");
+          } else {
+
+          //posts exist, parse && display them
+            $.each(postList, function(key,value){
+              var postKey = key;
+              if (value.parent) {
+                attachPost(value, false, true);
+              } else {
+                attachPost(value);
+              }
+            })
+          } 
+
+        }
+
+        function fetchPosts(url){
+          console.log('Fetching...')
+          var fetchUrl;
+
+          if (!url) {
+            fetchUrl = initialURL
+          } else {
+            fetchUrl = url
+          }
+          $.ajax({
+            url: fetchUrl,
+            data: {
+              "q": query
+            },
+            method:"GET",
+            success: function(data){
+              //console.log(data)
+              postList = data.results
+              if (data.next){
+                nextPostUrl = data.next
+              } else {
+                $("#loadmore").css("display", "none")
+              }
+              nextPostUrl = data.next
+              pasrePosts();
+              updateHashLinks();
+              
+            },
+            error: function(data){
+              console.log("error")
+              console.log(data)
+            }
+          })
+
+        }
+
+        function fetchSingle(fetchOneId){
+          console.log('Fetching...')
+          var fetchDetailUrl = '/api/posts/' + fetchOneId + '/'
+
+          $.ajax({
+            url: fetchDetailUrl,
+            method:"GET",
+            success: function(data){
+              console.log(data)
+              postList = data.results
+              // if (data.next){
+              //   nextPostUrl = data.next
+              // } else {
+              //   $("#loadmore").css("display", "none")
+              // }
+              // nextPostUrl = data.next
+              pasrePosts();
+              updateHashLinks();
+              
+            },
+           error: function(data){
+              console.log("error")
+              console.log(data)
+           }
+          })
+
+        }
+
+        if (fetchOneId){
+          fetchSingle(fetchOneId)
+        } else {
+          fetchPosts()
+        }
+        
+
+        $("#loadmore").click(function(event){
+          event.preventDefault()
+          if (nextPostUrl) {
+            fetchPosts(nextPostUrl)
+          }
+          //load more items
+        })
+
+        var charsStart = 140;
+        var charsCurrent = 0;
+        $(".post-form").append("<span class='postCharsLeft' style='margin-left: 20px'>" + charsStart + "</span>")
+
+        $(".post-form textarea").keyup(function(event){
+          //console.log(event.key, event.timeStamp)
+          var postValue = $(this).val()
+          charsCurrent = charsStart - postValue.length
+          var spanChars = $(this).parent().parent().parent().find("span.postCharsLeft")
+          spanChars.text(charsCurrent)
+
+          if (charsCurrent > 0 ){
+            //remove classes
+            spanChars.removeClass("grey-color")
+            spanChars.removeClass("red-color")
+          } else if (charsCurrent == 0 ){
+            //add gray class
+            spanChars.removeClass("red-color")
+            spanChars.addClass("grey-color")
+          } else if (charsCurrent < 0 ){
+            //add red class
+            spanChars.removeClass("grey-color")
+            spanChars.addClass("red-color")
+          }
+
+        })
+
+
+        $(".post-form").submit(function(event){
+          event.preventDefault()
+          var this_ = $(this)
+          console.log(this_.serialize())
+          var formData = this_.serialize()
+
+          if (charsCurrent >= 0) {
+
+            $.ajax({
+              url:("/api/posts/create/"),
+              data: formData,
+              method:"POST",
+              success: function(data){
+                this_.find("input[type=text], textarea").val("")
+                attachPost(data, true)
+                updateHashLinks();
+                $("#replyModal").modal("hide")
+                //console.log(data)
+                //fetchPosts()
+                //postList = data
+                //pasrePosts();
+                
+              },
+              error: function(data){
+                console.log("error")
+                console.log(data.statusText)
+                console.log(data.status)
+
+              }
+            })
+
+          } else {
+            console.log("Cannot send, post too long")
+          }
+
+          
+        })
+
+      }
+    </script>
+
+    {% block script %}{% endblock script%}
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
+    <!-- <script src="{% static 'js/bootstrap.min.js' %}"></script> -->
+    <!-- <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" ></script> -->
+    <!--<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>-->
+    <!--<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>-->
+
+    <script>
+      $(document).ready(function(){
+        var typingTimer;
+        var doneInterval = 800; //in ms
+        var searchInput = $("#navbar-search-form input[type=text]");
+        var searchQuery;
+
+        searchInput.keyup(function(event){
+          searchQuery = $(this).val()
+
+          clearTimeout(typingTimer)
+          typingTimer = setTimeout(doneSearchTyping, doneInterval)
+
+        })
+
+        searchInput.keydown(function(event){
+          clearTimeout(typingTimer)
+        })
+
+        function doneSearchTyping(){
+          if (searchQuery){
+            //do search
+            var url = '/search/?q=' + searchQuery
+            document.location.href = url
+
+          }
+        }
+
+      })
+      
+    </script>
+  </body>
+</html>
